@@ -12,6 +12,10 @@ function main() {
   console.log(answer);
 }
 
+/**
+ * @param {string} line
+ * @returns {number}
+ */
 function getCalibrationValue(line) {
   const digits = line.split("").filter((char) => /\d/.test(char));
   const finalString = digits[0] + digits[digits.length - 1];
