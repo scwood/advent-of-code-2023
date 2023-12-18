@@ -6,111 +6,62 @@ function main() {
   const buffer = fs.readFileSync(path.join(__dirname, "input.txt"));
   const input = buffer.toString();
   const lines = input.split(os.EOL);
-  const symbolMap = mapSymbols(lines);
-  const potentialParts = mapNumbers(lines);
-  const parts = potentialParts.filter((potentialPart) => {
-    return isValidPart(potentialPart, symbolMap);
-  });
-  const answer = parts.reduce((accumulator, currentPart) => {
-    return accumulator + currentPart.value;
-  }, 0);
+  const chars = lines.map((line) => line.split(""));
+  const answer = sumPartNumbers(chars);
   console.log(answer);
 }
 
 /**
- * @param {string[]} lines
- * @returns {Record<number, Record<number, boolean>>}
+ * @param {string[][]} chars
+ * @returns {number}
  */
-function mapSymbols(lines) {
-  const result = {};
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    for (let j = 0; j < line.length; j++) {
-      const char = line.charAt(j);
-      if (isPeriod(char) || isDigit(char)) {
-        continue;
-      }
-      if (!result[i]) {
-        result[i] = {};
-      }
-      result[i][j] = true;
-    }
-  }
-  return result;
-}
+function sumPartNumbers(chars) {
+  let total = 0;
 
-/**
- * @typedef {Object} NumberPosition
- * @property {number} value
- * @property {number[][]} coordinates
- */
-
-/**
- * @param {string[]} lines
- * @returns {NumberPosition[]}
- */
-function mapNumbers(lines) {
-  const result = [];
-  for (let y = 0; y < lines.length; y++) {
-    const line = lines[y];
+  for (let y = 0; y < chars.length; y++) {
+    const line = chars[y];
     let currentNumberString = "";
-    let currentNumberCoordinates = [];
+    let isValidNumber = false;
+
     for (let x = 0; x < line.length; x++) {
-      const char = line.charAt(x);
+      const char = line[x];
       if (isDigit(char)) {
         currentNumberString += char;
-        currentNumberCoordinates.push([x, y]);
-      } else if (currentNumberString.length > 0) {
-        result.push({
-          value: parseInt(currentNumberString),
-          coordinates: currentNumberCoordinates,
-        });
-        currentNumberString = [];
-        currentNumberCoordinates = [];
+        isValidNumber = isValidNumber || isSymbolTouching(x, y, chars);
+      } else {
+        if (isValidNumber) {
+          total += parseInt(currentNumberString);
+        }
+        currentNumberString = "";
+        isValidNumber = false;
       }
     }
-    if (currentNumberString.length > 0) {
-      result.push({
-        value: parseInt(currentNumberString),
-        coordinates: currentNumberCoordinates,
-      });
+
+    if (isValidNumber) {
+      total += parseInt(currentNumberString);
     }
   }
-  return result;
+
+  return total;
 }
 
 /**
- *
- * @param {NumberPosition} potentialPart
- * @param {Record<number, Record<number, boolean>>} symbolMap
+ * @param {number} x
+ * @param {number} y
+ * @param {string[][]} chars
  * @returns {boolean}
  */
-function isValidPart(potentialPart, symbolMap) {
-  for (let i = 0; i < potentialPart.coordinates.length; i++) {
-    const [x, y] = potentialPart.coordinates[i];
-    if (symbolMap[y - 1]?.[x] || symbolMap[y + 1]?.[x]) {
-      return true;
-    }
-    if (i === 0) {
-      if (
-        symbolMap[y]?.[x - 1] ||
-        symbolMap[y - 1]?.[x - 1] ||
-        symbolMap[y + 1]?.[x - 1]
-      ) {
-        return true;
-      }
-    }
-    if (i === potentialPart.coordinates.length - 1) {
-      if (
-        symbolMap[y]?.[x + 1] ||
-        symbolMap[y - 1]?.[x + 1] ||
-        symbolMap[y + 1]?.[x + 1]
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+function isSymbolTouching(x, y, chars) {
+  return (
+    isSymbol(chars[y - 1]?.[x - 1]) ||
+    isSymbol(chars[y - 1]?.[x]) ||
+    isSymbol(chars[y - 1]?.[x + 1]) ||
+    isSymbol(chars[y]?.[x - 1]) ||
+    isSymbol(chars[y]?.[x + 1]) ||
+    isSymbol(chars[y + 1]?.[x - 1]) ||
+    isSymbol(chars[y + 1]?.[x]) ||
+    isSymbol(chars[y + 1]?.[x + 1])
+  );
 }
 
 /**
@@ -127,6 +78,14 @@ function isDigit(char) {
  */
 function isPeriod(char) {
   return char === ".";
+}
+
+/**
+ * @param {string} char
+ * @returns {boolean}
+ */
+function isSymbol(char) {
+  return !!char && !isPeriod(char) && !isDigit(char);
 }
 
 if (require.main === module) {
